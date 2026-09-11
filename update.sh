@@ -33,16 +33,12 @@ if git -C "$repo_root" ls-files --error-unmatch -- AGENTS.md >/dev/null 2>&1; th
   die "Refusing to overwrite tracked AGENTS.md"
 fi
 
-[[ ! -L "$target_agents" ]] || die "Refusing to use symlinked AGENTS.md"
+[[ -e "$target_agents" || -L "$target_agents" ]] ||
+  die "Amao Harness does not appear to be installed. Run install.sh first."
 
-if [[ -e "$target_agents" || -L "$target_agents" ]]; then
-  if ! cmp -s -- "$source_agents" "$target_agents"; then
-    die "Refusing to overwrite conflicting untracked AGENTS.md"
-  fi
-fi
-
-[[ ! -L "$repo_root/docs" ]] || die "Refusing to use symlinked docs directory"
-[[ ! -L "$repo_root/docs/agents" ]] || die "Refusing to use symlinked docs/agents directory"
+[[ ! -L "$target_agents" ]] || die "Refusing to overwrite symlinked AGENTS.md"
+[[ "$(head -n 1 -- "$target_agents")" == "$managed_marker" ]] ||
+  die "Refusing to overwrite unmanaged AGENTS.md"
 
 metadata_path=$(git -C "$repo_root" rev-parse --git-path "$metadata_name")
 if [[ "$metadata_path" != /* ]]; then
@@ -52,9 +48,20 @@ metadata_dir=$(dirname -- "$metadata_path")
 [[ ! -L "$metadata_dir" ]] || die "Refusing to use symlinked Amao Harness metadata directory"
 if [[ -e "$metadata_path" || -L "$metadata_path" ]]; then
   [[ -f "$metadata_path" && ! -L "$metadata_path" ]] ||
-    die "Refusing to overwrite invalid Amao Harness metadata"
+    die "Refusing to use invalid Amao Harness metadata"
 fi
-mkdir -p -- "$metadata_dir"
+
+current_hash=$(git -C "$repo_root" hash-object --no-filters -- "$target_agents")
+source_hash=$(git -C "$repo_root" hash-object --no-filters -- "$source_agents")
+
+if [[ -f "$metadata_path" ]]; then
+  installed_hash=$(<"$metadata_path")
+  if [[ "$current_hash" != "$installed_hash" ]]; then
+    die "Local AGENTS.md has been modified since the last Amao Harness install/update. Refusing to overwrite."
+  fi
+elif [[ "$current_hash" != "$source_hash" ]]; then
+  die "Amao Harness update metadata is missing. Refusing to overwrite. Run install.sh first."
+fi
 
 exclude_path=$(git -C "$repo_root" rev-parse --git-path info/exclude)
 if [[ "$exclude_path" != /* ]]; then
@@ -81,12 +88,11 @@ if (( ${#exclude_lines[@]} > 0 )); then
   printf '%s\n' "${exclude_lines[@]}" >>"$exclude_path"
 fi
 
-if [[ ! -e "$target_agents" ]]; then
+if ! cmp -s -- "$source_agents" "$target_agents"; then
   cp -- "$source_agents" "$target_agents"
 fi
-mkdir -p -- "$repo_root/docs/agents"
 
-installed_hash=$(git -C "$repo_root" hash-object --no-filters -- "$target_agents")
-printf '%s\n' "$installed_hash" >"$metadata_path"
+mkdir -p -- "$metadata_dir"
+printf '%s\n' "$source_hash" >"$metadata_path"
 
-printf 'Amao Harness installed in %s\n' "$repo_root"
+printf 'Amao Harness updated in %s\n' "$repo_root"

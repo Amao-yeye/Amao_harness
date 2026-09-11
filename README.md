@@ -20,6 +20,19 @@ The installer locates the Git repository root, copies `AGENTS.md`, creates
 `.git/info/exclude`. It does not change the shared `.gitignore` or overwrite an
 existing tracked or conflicting local `AGENTS.md`.
 
+## Update Harness
+
+```bash
+cd ~/Amao_harness
+git pull
+
+./update.sh ~/projects/my_project
+```
+
+Amao Harness updates are explicit, not automatic. Existing projects change only
+when the user runs `update.sh`. The updater refuses to overwrite a locally
+modified `AGENTS.md` or one tracked by the target project's Git repository.
+
 ## Create a task workspace
 
 ```bash
@@ -29,7 +42,7 @@ existing tracked or conflicting local `AGENTS.md`.
 Task names are single path components made from letters, numbers, `.`, `_`, and
 `-`.
 
-After creating a task, the project looks like this:
+With the recommended code directories, the project layout looks like this:
 
 ```text
 project/
@@ -40,11 +53,16 @@ project/
 │           ├── persistent/
 │           ├── working/
 │           └── scratch/
-└── src/
+├── src/
+├── tests/
+└── debug/
 ```
 
 `AGENTS.md` and `docs/agents/` remain local through `.git/info/exclude`; product
 code and the team's shared Git files remain unchanged.
+
+Long-term regression checks belong in `tests/`; temporary investigation and
+debugging code belong in `debug/`. Code in `src/` must never depend on either.
 
 ## Verify
 

@@ -1,3 +1,4 @@
+<!-- Managed by Amao Harness -->
 # Amao Harness
 
 Amao Harness is a local engineering workflow for long-term software and research projects.
@@ -143,6 +144,33 @@ src/
 
 Moving validated code into `src/` is called **promotion** or **入库**.
 
+Project code should distinguish these three directories clearly:
+
+```text
+project/
+├── src/
+├── tests/
+└── debug/
+```
+
+### `src/`
+
+Contains only stable, reusable, release-quality code that has been formally promoted into the project.
+
+Formal project code in `src/` may be called by test and debugging code.
+
+### `tests/`
+
+Contains formal, long-lived, repeatable tests for regression testing and continuous validation of project behavior.
+
+Tests are project assets intended to be retained by default.
+
+### `debug/`
+
+Contains scripts for temporary troubleshooting, one-off validation, issue reproduction, and exploratory checks.
+
+Debugging code is disposable engineering code by default. It must remain safe to delete after the issue is resolved or the corresponding implementation has been promoted.
+
 Experimental implementations must remain outside `src/`.
 
 Before promotion, experimental code may prioritize iteration speed and exploration. After a solution has been validated, it must be cleaned, reviewed, given stable interfaces, and tested before entering `src/`.
@@ -154,6 +182,10 @@ After the validated implementation has been promoted into `src/`, deleting the c
 Therefore:
 
 **`src/` must never depend on disposable experimental code.**
+
+**Long-term regression checks belong in `tests/`; temporary investigation and debugging code belong in `debug/`.**
+
+**`src/` must never depend on `tests/` or `debug/`.**
 
 A typical lifecycle is:
 
